@@ -1,6 +1,7 @@
 package pbloom
 
 import (
+	"bytes"
 	"errors"
 	"math"
 
@@ -75,11 +76,19 @@ func NewFilterFromBits(bits []byte, k uint64) (*Filter, error) {
 
 // FromSerialized deserializes a Bloom filter from a byte slice using MessagePack.
 func FromSerialized(data []byte) (*Filter, error) {
-	f := &Filter{}
-	if err := msgpack.Unmarshal(data, f); err != nil {
+	dec := msgpack.NewDecoder(bytes.NewReader(data))
+	bits, err := dec.DecodeBytes()
+	if err != nil {
 		return nil, err
 	}
-	return f, nil
+	k, err := dec.DecodeUint64()
+	if err != nil {
+		return nil, err
+	}
+	return &Filter{
+		Bits: bits,
+		K:    k,
+	}, nil
 }
 
 // Put inserts a key into the Bloom filter by setting the appropriate bits.
@@ -108,5 +117,13 @@ func (f *Filter) Exists(key string) bool {
 
 // Serialize serializes the Bloom filter into a byte slice using MessagePack.
 func (f *Filter) Serialize() ([]byte, error) {
-	return msgpack.Marshal(f)
+	encoded := bytes.Buffer{}
+	enc := msgpack.NewEncoder(&encoded)
+	if err := enc.EncodeBytes(f.Bits); err != nil {
+		return nil, err
+	}
+	if err := enc.EncodeUint64(f.K); err != nil {
+		return nil, err
+	}
+	return encoded.Bytes(), nil
 }
