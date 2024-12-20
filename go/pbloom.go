@@ -10,8 +10,9 @@ import (
 )
 
 type Filter struct {
-	Bits []byte
-	K    uint64
+	bits   []byte
+	k      uint8
+	hasher murmur3.Hash128
 }
 
 // NewFilterFromEntriesAndSize initializes a Bloom filter with a specified number of entries and storage size in bytes.
@@ -28,8 +29,9 @@ func NewFilterFromEntriesAndSize(entries int, size int) (*Filter, error) {
 	k := math.Ceil((m / float64(entries)) * math.Log(2))
 
 	return &Filter{
-		Bits: make([]byte, size),
-		K:    uint64(k),
+		bits:   make([]byte, size),
+		k:      uint8(k),
+		hasher: murmur3.New128(),
 	}, nil
 }
 
@@ -53,14 +55,15 @@ func NewFilterFromEntriesAndFP(entries int, fpRate float64) (*Filter, error) {
 	k := math.Round((m / float64(entries)) * math.Log(2))
 
 	return &Filter{
-		Bits: make([]byte, size),
-		K:    uint64(k),
+		bits:   make([]byte, size),
+		k:      uint8(k),
+		hasher: murmur3.New128(),
 	}, nil
 }
 
 // NewFilterFromBits initializes a Bloom filter from an existing bit slice and specified number of hash functions.
 // This can be useful when deserializing or reconstructing a Bloom filter from stored data.
-func NewFilterFromBits(bits []byte, k uint64) (*Filter, error) {
+func NewFilterFromBits(bits []byte, k uint8) (*Filter, error) {
 	if len(bits) == 0 {
 		return nil, errors.New("bits slice cannot be empty")
 	}
@@ -69,8 +72,9 @@ func NewFilterFromBits(bits []byte, k uint64) (*Filter, error) {
 	}
 
 	return &Filter{
-		Bits: bits,
-		K:    k,
+		bits:   bits,
+		k:      k,
+		hasher: murmur3.New128(),
 	}, nil
 }
 
@@ -81,34 +85,39 @@ func FromSerialized(data []byte) (*Filter, error) {
 	if err != nil {
 		return nil, err
 	}
-	k, err := dec.DecodeUint64()
+	k, err := dec.DecodeUint8()
 	if err != nil {
 		return nil, err
 	}
 	return &Filter{
-		Bits: bits,
-		K:    k,
+		bits:   bits,
+		k:      k,
+		hasher: murmur3.New128(),
 	}, nil
 }
 
 // Put inserts a key into the Bloom filter by setting the appropriate bits.
-func (f *Filter) Put(key string) {
-	M := uint64(len(f.Bits) * 8)
-	h1, h2 := murmur3.StringSum128(key)
-	for i := uint64(0); i < f.K; i++ {
+func (f *Filter) Put(key []byte) {
+	M := uint64(len(f.bits) * 8)
+	f.hasher.Reset()
+	f.hasher.Write(key)
+	h1, h2 := f.hasher.Sum128()
+	for i := uint64(0); i < uint64(f.k); i++ {
 		hash := (h1 + i*h2) % M
-		f.Bits[hash/8] |= 1 << (hash % 8)
+		f.bits[hash/8] |= 1 << (hash % 8)
 	}
 }
 
 // Exists checks whether a key is possibly in the Bloom filter.
 // Returns true if the key might be in the set, or false if it is definitely not present.
-func (f *Filter) Exists(key string) bool {
-	M := uint64(len(f.Bits) * 8)
-	h1, h2 := murmur3.StringSum128(key)
-	for i := uint64(0); i < f.K; i++ {
+func (f *Filter) Exists(key []byte) bool {
+	M := uint64(len(f.bits) * 8)
+	f.hasher.Reset()
+	f.hasher.Write(key)
+	h1, h2 := f.hasher.Sum128()
+	for i := uint64(0); i < uint64(f.k); i++ {
 		hash := (h1 + i*h2) % M
-		if f.Bits[hash/8]&(1<<(hash%8)) == 0 {
+		if f.bits[hash/8]&(1<<(hash%8)) == 0 {
 			return false
 		}
 	}
@@ -119,10 +128,10 @@ func (f *Filter) Exists(key string) bool {
 func (f *Filter) Serialize() ([]byte, error) {
 	encoded := bytes.Buffer{}
 	enc := msgpack.NewEncoder(&encoded)
-	if err := enc.EncodeBytes(f.Bits); err != nil {
+	if err := enc.EncodeBytes(f.bits); err != nil {
 		return nil, err
 	}
-	if err := enc.EncodeUint64(f.K); err != nil {
+	if err := enc.EncodeUint8(f.k); err != nil {
 		return nil, err
 	}
 	return encoded.Bytes(), nil

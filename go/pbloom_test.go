@@ -14,7 +14,7 @@ func TestNewFilterFromEntriesAndSize(t *testing.T) {
 		entries     int
 		size        int
 		expectError bool
-		expectedK   uint64
+		expectedK   uint8
 		expectedLen int
 	}{
 		{
@@ -69,8 +69,8 @@ func TestNewFilterFromEntriesAndSize(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, filter)
-				assert.Equal(t, tt.expectedLen, len(filter.Bits))
-				assert.Equal(t, tt.expectedK, filter.K)
+				assert.Equal(t, tt.expectedLen, len(filter.bits))
+				assert.Equal(t, tt.expectedK, filter.k)
 			}
 		})
 	}
@@ -83,7 +83,7 @@ func TestNewFilterFromEntriesAndFP(t *testing.T) {
 		entries      int
 		fpRate       float64
 		expectError  bool
-		expectedK    uint64
+		expectedK    uint8
 		expectedSize int
 	}{
 		{
@@ -158,8 +158,8 @@ func TestNewFilterFromEntriesAndFP(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, filter)
-				assert.Equal(t, tt.expectedSize, len(filter.Bits), "Size should match")
-				assert.Equal(t, tt.expectedK, filter.K, "K should match")
+				assert.Equal(t, tt.expectedSize, len(filter.bits), "Size should match")
+				assert.Equal(t, tt.expectedK, filter.k, "K should match")
 			}
 		})
 	}
@@ -170,7 +170,7 @@ func TestNewFilterFromBits(t *testing.T) {
 	tests := []struct {
 		name        string
 		bits        []byte
-		k           uint64
+		k           uint8
 		expectError bool
 	}{
 		{
@@ -209,8 +209,8 @@ func TestNewFilterFromBits(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, filter)
-				assert.Equal(t, tt.k, filter.K)
-				assert.Equal(t, tt.bits, filter.Bits)
+				assert.Equal(t, tt.k, filter.k)
+				assert.Equal(t, tt.bits, filter.bits)
 			}
 		})
 	}
@@ -220,8 +220,8 @@ func TestNewFilterFromBits(t *testing.T) {
 func TestFromSerialized(t *testing.T) {
 	// Prepare a filter to serialize
 	originalFilter := &Filter{
-		Bits: []byte{0x0F, 0xF0, 0xAA},
-		K:    5,
+		bits: []byte{0x0F, 0xF0, 0xAA},
+		k:    5,
 	}
 
 	data, err := originalFilter.Serialize()
@@ -267,8 +267,8 @@ func TestFromSerialized(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, filter)
-				assert.Equal(t, tt.expectedFilter.K, filter.K)
-				assert.Equal(t, tt.expectedFilter.Bits, filter.Bits)
+				assert.Equal(t, tt.expectedFilter.k, filter.k)
+				assert.Equal(t, tt.expectedFilter.bits, filter.bits)
 			}
 		})
 	}
@@ -287,7 +287,7 @@ func TestPutExists(t *testing.T) {
 
 	// Insert keys
 	for _, key := range insertedKeys {
-		filter.Put(key)
+		filter.Put([]byte(key))
 	}
 
 	// Table-driven test cases for Exists
@@ -313,7 +313,7 @@ func TestPutExists(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			exists := filter.Exists(tt.key)
+			exists := filter.Exists([]byte(tt.key))
 			if tt.expected {
 				assert.True(t, exists, "Expected key %s to exist", tt.key)
 			} else {
@@ -339,7 +339,7 @@ func TestSerializeAndDeserialize(t *testing.T) {
 	// Insert some keys
 	keys := []string{"alpha", "beta", "gamma", "delta", "epsilon"}
 	for _, key := range keys {
-		filter.Put(key)
+		filter.Put([]byte(key))
 	}
 
 	// Serialize the filter
@@ -353,18 +353,18 @@ func TestSerializeAndDeserialize(t *testing.T) {
 	assert.NotNil(t, deserializedFilter)
 
 	// Compare the original and deserialized filters
-	assert.Equal(t, filter.K, deserializedFilter.K, "K values should match")
-	assert.Equal(t, filter.Bits, deserializedFilter.Bits, "Bits slices should match")
+	assert.Equal(t, filter.k, deserializedFilter.k, "K values should match")
+	assert.Equal(t, filter.bits, deserializedFilter.bits, "Bits slices should match")
 
 	// Verify that the keys still exist in the deserialized filter
 	for _, key := range keys {
-		assert.True(t, deserializedFilter.Exists(key), "Key %s should exist in deserialized filter", key)
+		assert.True(t, deserializedFilter.Exists([]byte(key)), "Key %s should exist in deserialized filter", key)
 	}
 
 	// Verify that non-inserted keys do not exist
 	nonKeys := []string{"zeta", "eta", "theta"}
 	for _, key := range nonKeys {
-		exists := deserializedFilter.Exists(key)
+		exists := deserializedFilter.Exists([]byte(key))
 		if exists {
 			t.Errorf("Key %s should not exist in deserialized filter (false positive)", key)
 		} else {
@@ -383,31 +383,31 @@ func TestFilterBasicOperations(t *testing.T) {
 
 	// Initially, none of the keys should exist
 	for _, key := range keys {
-		assert.False(t, filter.Exists(key), "Key %s should not exist initially", key)
+		assert.False(t, filter.Exists([]byte(key)), "Key %s should not exist initially", key)
 	}
 
 	// Insert "one" and "two"
-	filter.Put("one")
-	filter.Put("two")
+	filter.Put([]byte("one"))
+	filter.Put([]byte("two"))
 
 	// Check existence
-	assert.True(t, filter.Exists("one"), "'one' should exist after insertion")
-	assert.True(t, filter.Exists("two"), "'two' should exist after insertion")
-	assert.False(t, filter.Exists("three"), "'three' should not exist")
-	assert.False(t, filter.Exists("four"), "'four' should not exist")
-	assert.False(t, filter.Exists("five"), "'five' should not exist")
+	assert.True(t, filter.Exists([]byte("one")), "'one' should exist after insertion")
+	assert.True(t, filter.Exists([]byte("two")), "'two' should exist after insertion")
+	assert.False(t, filter.Exists([]byte("three")), "'three' should not exist")
+	assert.False(t, filter.Exists([]byte("four")), "'four' should not exist")
+	assert.False(t, filter.Exists([]byte("five")), "'five' should not exist")
 
 	// Insert "three"
-	filter.Put("three")
-	assert.True(t, filter.Exists("three"), "'three' should exist after insertion")
+	filter.Put([]byte("three"))
+	assert.True(t, filter.Exists([]byte("three")), "'three' should exist after insertion")
 
 	// Check non-inserted keys
-	assert.False(t, filter.Exists("four"), "'four' should not exist")
-	assert.False(t, filter.Exists("five"), "'five' should not exist")
+	assert.False(t, filter.Exists([]byte("four")), "'four' should not exist")
+	assert.False(t, filter.Exists([]byte("five")), "'five' should not exist")
 
 	// Edge case: Insert empty string
-	filter.Put("")
-	assert.True(t, filter.Exists(""), "Empty string should exist after insertion")
+	filter.Put([]byte(""))
+	assert.True(t, filter.Exists([]byte("")), "Empty string should exist after insertion")
 }
 
 // TestMultipleInsertions tests inserting the same key multiple times.
@@ -420,11 +420,11 @@ func TestMultipleInsertions(t *testing.T) {
 
 	// Insert the key multiple times
 	for i := 0; i < 10; i++ {
-		filter.Put(key)
+		filter.Put([]byte(key))
 	}
 
 	// Check that the key exists
-	assert.True(t, filter.Exists(key), "Key %s should exist after multiple insertions", key)
+	assert.True(t, filter.Exists([]byte(key)), "Key %s should exist after multiple insertions", key)
 }
 
 // TestFalsePositiveRate tests the false positive rate of the Bloom filter.
@@ -456,6 +456,6 @@ func TestFalsePositiveRate(t *testing.T) {
 }
 
 // generateKey generates a unique string key based on an integer.
-func generateKey(i int) string {
-	return "key_" + strconv.Itoa(i)
+func generateKey(i int) []byte {
+	return []byte("key_" + strconv.Itoa(i))
 }
