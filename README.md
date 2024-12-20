@@ -1,5 +1,8 @@
 # pbloom
 
-> A portable bloom filter project, goal is to create portable bloom filter library that can be used in any language. Goal was to being able to create/serialize bloom filter in Go and then use it via. a Postgres extension written in Rust.
+> A project focused on creating a portable bloom filter library designed for use across various programming languages. Specifically, the initial goal was to develop the capability to create and serialize bloom filters using Go, and subsequently utilize them within a Postgres extension implemented in Rust.
 
+# Status
+
+![dumpster_fire_code](https://c.tenor.com/R2RaXqV8d9gAAAAC/dumpsterfire-flooding.gif)
 
