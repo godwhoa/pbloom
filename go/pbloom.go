@@ -4,7 +4,6 @@ import (
 	"errors"
 	"math"
 
-	"github.com/go-faster/city"
 	"github.com/twmb/murmur3"
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -86,8 +85,7 @@ func FromSerialized(data []byte) (*Filter, error) {
 // Put inserts a key into the Bloom filter by setting the appropriate bits.
 func (f *Filter) Put(key string) {
 	M := uint64(len(f.Bits) * 8)
-	h1 := murmur3.StringSum64(key)
-	h2 := city.Hash64([]byte(key))
+	h1, h2 := murmur3.StringSum128(key)
 	for i := uint64(0); i < f.K; i++ {
 		hash := (h1 + i*h2) % M
 		f.Bits[hash/8] |= 1 << (hash % 8)
@@ -98,8 +96,7 @@ func (f *Filter) Put(key string) {
 // Returns true if the key might be in the set, or false if it is definitely not present.
 func (f *Filter) Exists(key string) bool {
 	M := uint64(len(f.Bits) * 8)
-	h1 := murmur3.StringSum64(key)
-	h2 := city.Hash64([]byte(key))
+	h1, h2 := murmur3.StringSum128(key)
 	for i := uint64(0); i < f.K; i++ {
 		hash := (h1 + i*h2) % M
 		if f.Bits[hash/8]&(1<<(hash%8)) == 0 {

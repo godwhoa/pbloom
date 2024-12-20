@@ -3,7 +3,6 @@ module pbloom
 go 1.23.2
 
 require (
-	github.com/go-faster/city v1.0.1
 	github.com/stretchr/testify v1.6.1
 	github.com/twmb/murmur3 v1.1.8
 	github.com/vmihailenco/msgpack/v5 v5.4.1
