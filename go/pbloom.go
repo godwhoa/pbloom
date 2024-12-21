@@ -5,7 +5,7 @@ import (
 	"errors"
 	"math"
 
-	"github.com/twmb/murmur3"
+	"github.com/spaolacci/murmur3"
 	"github.com/vmihailenco/msgpack/v5"
 )
 

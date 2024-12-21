@@ -1,9 +1,12 @@
 package pbloom
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"strconv"
 	"testing"
 
+	"github.com/spaolacci/murmur3"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -453,6 +456,45 @@ func TestFalsePositiveRate(t *testing.T) {
 	actualFPRate := float64(falsePositives) / float64(testSize)
 	// Allow a margin of error, e.g., 1.5 times the expected FP rate
 	assert.LessOrEqual(t, actualFPRate, fpRate*1.5, "False positive rate should be within acceptable bounds")
+}
+
+func TestGenerateBloom(t *testing.T) {
+	// t.Skip("Skip TestGenerateBloom")
+	entries := 1000
+	fpRate := 0.01
+	filter, err := NewFilterFromEntriesAndFP(entries, fpRate)
+	assert.NoError(t, err)
+	assert.NotNil(t, filter)
+
+	assert.Equal(t, len(filter.bits), 1199)
+	assert.Equal(t, filter.k, uint8(7))
+
+	// Insert numbers
+	for i := 0; i < entries; i++ {
+		filter.Put([]byte(strconv.Itoa(i)))
+	}
+
+	serialized, err := filter.Serialize()
+	assert.NoError(t, err)
+	assert.NotNil(t, serialized)
+
+	// check sha256 of serialized
+	assert.Equal(t, "b38258a2d43384e9d346f0a18f5f430fe3098fec322c97b6569d0aa1f7de610d", SHA256Hex(serialized))
+}
+
+func TestHashPortability(t *testing.T) {
+	assert.Equal(t, hex.EncodeToString([]byte("hello")), "68656c6c6f")
+	hasher := murmur3.New128()
+	hasher.Write([]byte("hello"))
+	h1, h2 := hasher.Sum128()
+	assert.Equal(t, h1, uint64(0xcbd8a7b341bd9b02))
+	assert.Equal(t, h2, uint64(0x5b1e906a48ae1d19))
+}
+
+func SHA256Hex(data []byte) string {
+	hash := sha256.New()
+	hash.Write(data)
+	return hex.EncodeToString(hash.Sum(nil))
 }
 
 // generateKey generates a unique string key based on an integer.
