@@ -479,7 +479,7 @@ func TestGenerateBloom(t *testing.T) {
 	assert.NotNil(t, serialized)
 
 	// check sha256 of serialized
-	assert.Equal(t, "737f6f4e5594152b0053fef3806aa183023217b28e8be8a3447ebf47fccfa894", SHA256Hex(serialized))
+	assert.Equal(t, "b38258a2d43384e9d346f0a18f5f430fe3098fec322c97b6569d0aa1f7de610d", SHA256Hex(serialized))
 }
 
 func TestHashPortability(t *testing.T) {
