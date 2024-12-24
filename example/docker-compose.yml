@@ -1,0 +1,13 @@
+
+services:
+  postgres:
+    image: ghcr.io/godwhoa/pbloom:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: test
+    ports:
+      - "5432:5432"
+    # No volumes are defined to ensure data is not persisted
+    # Optional: Restart policy can be set if desired
+    restart: unless-stopped
