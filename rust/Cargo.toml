@@ -2,6 +2,8 @@
 name = "pbloom"
 version = "0.1.0"
 edition = "2021"
+description = "A portable bloom filter implementation in Rust"
+license = "MIT"
 
 [dependencies]
 murmur3 = "0.5.2"
