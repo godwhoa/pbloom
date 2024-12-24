@@ -2,16 +2,17 @@
 
 > A project focused on creating a portable bloom filter library designed for use across various programming languages. Specifically, the initial goal was to develop the capability to create and serialize bloom filters using Go, and subsequently utilize them within a Postgres extension implemented in Rust.
 
+
 # Current State
 
-- We have libraries for Go and Rust that can create, populate, query and serialize bloom filters.
-- We have a Postgres extension in Rust, which utilizes the Rust library to create, populate, and query bloom filters.
-- We have docker image for PG based on `cloudnative-pg/postgresql:16.0` which includes the pbloompg extension.
-- We have an example where we create/populate/serialize in Go, insert it into PG, and query it using the pbloompg extension.
+- Go and Rust libraries for creating, populating, querying, and serializing bloom filters.
+- Rust-based Postgres extension utilizing the bloom filter library.
+- Docker image with PostgreSQL 16.0 and pbloompg extension.
+- Example containing: create and serialize in Go, insert into PG, query with pbloompg.
 
 # Future
 
-- Add support for more languages.
-- Add support for more similar data structures, like xor filters, ribbon filters, ngram bloom filters, etc.
+- Extend support to additional programming languages.
+- Incorporate other data structures like xor, ribbon, and ngram bloom filters.
 - Performance testing and optimization.
-- Proper specification
+- Proper specifications.
