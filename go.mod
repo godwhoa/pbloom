@@ -1,4 +1,4 @@
-module github.com/godwhoa/pbloom/go
+module github.com/godwhoa/pbloom
 
 go 1.23.2
 
