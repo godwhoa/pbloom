@@ -39,3 +39,4 @@ FROM ghcr.io/cloudnative-pg/postgresql:16.0
 
 COPY --from=builder /pbloom-pg16/*.so /usr/lib/postgresql/16/lib
 COPY --from=builder /pbloom-pg16/*.control /usr/share/postgresql/16/extension
+COPY --from=builder /pbloom-pg16/*.sql /usr/share/postgresql/16/extension
