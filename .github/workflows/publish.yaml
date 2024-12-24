@@ -54,16 +54,18 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create and push manifest images for latest
-        uses: Noelware/docker-manifest-action@56f19b00084cefe1b43752e27025979fa5707a70 #0.3.1
-        with:
-          inputs: ghcr.io/${{ github.repository_owner }}/pbloom:latest
-          images: ghcr.io/${{ github.repository_owner }}/pbloom:latest-amd64,ghcr.io/${{ github.repository_owner }}/pbloom:latest-arm64
-          push: true
+      - name: Create SHA manifest and push
+        run: |
+          docker manifest create \
+            ghcr.io/${{ github.repository_owner }}/pbloom:${{ github.sha }} \
+            --amend ghcr.io/${{ github.repository_owner }}/pbloom:${{ github.sha }}-amd64 \
+            --amend ghcr.io/${{ github.repository_owner }}/pbloom:${{ github.sha }}-arm64
+          docker manifest push ghcr.io/${{ github.repository_owner }}/pbloom:${{ github.sha }}
 
-      - name: Create and push manifest images for specific version
-        uses: Noelware/docker-manifest-action@56f19b00084cefe1b43752e27025979fa5707a70 #0.3.1
-        with:
-          inputs: ghcr.io/${{ github.repository_owner }}/pbloom:${{ github.sha  }}
-          images: ghcr.io/${{ github.repository_owner }}/pbloom:${{ github.sha  }}-amd64,ghcr.io/${{ github.repository_owner }}/pbloom:${{ github.sha  }}-arm64
-          push: true
+      - name: Create latest manifest and push
+        run: |
+          docker manifest create \
+            ghcr.io/${{ github.repository_owner }}/pbloom:latest \
+            --amend ghcr.io/${{ github.repository_owner }}/pbloom:latest-amd64 \
+            --amend ghcr.io/${{ github.repository_owner }}/pbloom:latest-arm64
+          docker manifest push ghcr.io/${{ github.repository_owner }}/pbloom:latest
